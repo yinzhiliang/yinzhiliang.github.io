@@ -236,7 +236,7 @@
               
                 
                 <a class="post-title-link" href="/2016/07/30/Picasso图片加载库使用/" itemprop="url">
-                  Picasso图片加载库使用
+                  Picasso图片加载库源码解析
                 </a>
               
             
@@ -279,7 +279,102 @@
       
         
           
-            
+            <p>Picasso是square开源的的android第三方图片加载库，他代码非常简洁，只有不到3000行代码，方法数不到900个，使用起来也非常简单，一行代码就可以完成图片加载过程。</p>
+<pre><code>Picasso.with(context).load(url).into(imageView);
+</code></pre><p><img src="/images/picasso.png" alt="image"></p>
+<p>他具有如下一些特点：</p>
+<ol>
+<li>支持多种图片资源下载（http:、file:、R.drawable、content:、assets）</li>
+<li><p>支持图片变换 </p>
+<pre><code>Picasso.with(context)
+.load(url)
+.transform(transform)
+.into(imageView);
+</code></pre></li>
+<li><p>自动处理listview中由于view复用可能导致的图片加载错位的问题</p>
+<pre><code>void enqueueAndSubmit(Action action) {
+     Object target = action.getTarget();
+     if (target != null &amp;&amp; targetToAction.get(target) != action) {
+         // This will also check we are on the main thread.
+         cancelExistingRequest(target);
+         targetToAction.put(target, action);
+     }
+     submit(action);
+}
+</code></pre><p> view对应target，如果targetToAction的map中发现已经存在该target的action，即已经存在一个其他的请求，则先通过cancelExistingRequest将之前的请求cacel掉，重新submit。</p>
+</li>
+<li><p>可以设置占位资源</p>
+<pre><code>Picasso.with(context)
+.load(url)
+.placeholder(R.drawable.user_placeholder)
+.error(R.drawable.user_placeholder_error)
+.into(imageView);
+</code></pre></li>
+<li><p>支持任务优先级，会优先加载“优先级”较高的图片</p>
+<pre><code>Picasso.with(context)
+.load(url)
+.priority(priority)
+.into(imageView);
+</code></pre></li>
+<li><p>可在listview滚动时暂停图片加载，停止滚动时恢复图片加载</p>
+<pre><code>Picasso.with(context).pauseTag(tag);
+Picasso.with(context).resumeTag(tag);
+</code></pre></li>
+<li><p>能够根据当前网络状态自动调整并发线程数</p>
+<pre><code>void adjustThreadCount(NetworkInfo info) {
+ if (info == null || !info.isConnectedOrConnecting()) {
+     setThreadCount(DEFAULT_THREAD_COUNT);
+     return;
+ }
+ switch (info.getType()) {
+ case ConnectivityManager.TYPE_WIFI:
+ case ConnectivityManager.TYPE_WIMAX:
+ case ConnectivityManager.TYPE_ETHERNET:
+     setThreadCount(6);
+     break;
+ case ConnectivityManager.TYPE_MOBILE:
+     switch (info.getSubtype()) {
+     case TelephonyManager.NETWORK_TYPE_LTE: // 4G
+     case TelephonyManager.NETWORK_TYPE_HSPAP:
+     case TelephonyManager.NETWORK_TYPE_EHRPD:
+         setThreadCount(4);
+         break;
+     case TelephonyManager.NETWORK_TYPE_UMTS: // 3G
+     case TelephonyManager.NETWORK_TYPE_CDMA:
+     case TelephonyManager.NETWORK_TYPE_EVDO_0:
+     case TelephonyManager.NETWORK_TYPE_EVDO_A:
+     case TelephonyManager.NETWORK_TYPE_EVDO_B:
+         setThreadCount(3);
+         break;
+     case TelephonyManager.NETWORK_TYPE_GPRS: // 2G
+     case TelephonyManager.NETWORK_TYPE_EDGE:
+         setThreadCount(1);
+         break;
+     default:
+         setThreadCount(DEFAULT_THREAD_COUNT);
+     }
+     break;
+ default:
+     setThreadCount(DEFAULT_THREAD_COUNT);
+ }
+ }
+</code></pre></li>
+</ol>
+<ol>
+<li><p>支持debug模式</p>
+<pre><code>Picasso.with(context).setIndicatorsEnabled(true);
+</code></pre></li>
+<li><p>自带内存和硬盘二级缓存功能，同时支持定制，加载时可选择使用哪种缓存</p>
+<pre><code>Picasso.with(context)
+.load(url)
+.networkPolicy(policy)
+.into(imageView);
+</code></pre></li>
+<li><p>可定制下载器</p>
+<p>Picasso通过反射获取下载器，只需要implement Downloader接口就可以定制下载器。默认使用okhttp作为下载器。通过getCacheDir方法获取缓存路径建立文件名为“picasso-cache”的Picasso的缓存文件，缓存大小为系统可用内存的2%，最小5m，最大50m</p>
+</li>
+</ol>
+
           
         
       
@@ -478,7 +573,7 @@
           
             <div class="site-state-item site-state-tags">
               <a href="/tags">
-                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-count">3</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
